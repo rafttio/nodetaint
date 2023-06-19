@@ -2,8 +2,6 @@ name: build
 
 on:
   push:
-    branches:
-      - master
     tags:
       - v*
 
@@ -12,21 +10,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: azure/docker-login@v1
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          login-server: quay.io
-          username: '${{ secrets.QUAYIO_USERNAME }}'
-          password: '${{ secrets.QUAYIO_PASSWORD }}'
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: crazy-max/ghaction-docker-buildx@v1
-        with:
-          buildx-version: latest
-          qemu-version: latest
-      - name: Available platforms
-        run: 'echo ${{ steps.buildx.outputs.platforms }}'
-      - name: Run Buildx
+          username: ${{ secrets.DOCKER_IO_USERNAME }}
+          password: ${{ secrets.DOCKER_IO_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Run Docker Buildx
         run: |
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            --push -t quay.io/wish/nodetaint:${GITHUB_REF##*/} .
+            --push -t "raftt/nodetaint:${{ github.ref_name }}" .
+
+      - uses: azure/setup-helm@v3
+
+      - name: Login to GHCR
+        shell: bash
+        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io/rafttio --username ${{ github.actor }} --password-stdin
+
+      - name: Generate Helm chart version
+        id: helm_chart_version
+        shell: bash
+        run: |
+          # Helm chart versions should not contain the 'v' prefix
+          export TAG="${{ github.ref_name }}"
+          echo "chart_version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Helm Package
+        shell: bash
+        run: helm package chart/ --version ${{ steps.helm_chart_version.outputs.chart_version }} --app-version ${{ github.ref_name }}
+
+      - name: Helm Push
+        shell: bash
+        run: helm push nodetaint-${{ steps.helm_chart_version.outputs.chart_version }}.tgz oci://ghcr.io/rafttio
+

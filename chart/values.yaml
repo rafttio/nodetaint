@@ -3,11 +3,11 @@
 # Declare variables to be passed into your templates.
 
 image:
-  registry: quay.io/
-  repository: wish/nodetaint
+  registry: raftt/
+  repository: nodetaint
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.0.3"
+  tag: "v0.0.3-raftt.1"
 
 imagePullSecrets: []
 nameOverride: ""
