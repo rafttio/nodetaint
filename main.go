@@ -339,6 +339,8 @@ func main() {
 		if ds, ok := obj.(*v1.DaemonSet); ok {
 			if _, ok := ds.ObjectMeta.Annotations[opts.DaemonSetAnnotation]; ok {
 				dsList[ds.Name] = ds
+			} else if _, ok := ds.Spec.Template.Annotations[opts.DaemonSetAnnotation]; ok {
+				dsList[ds.Name] = ds
 			}
 		}
 	}
