@@ -241,7 +241,12 @@ func main() {
 		isHandling.Lock()
 		defer isHandling.Unlock()
 
-		if _, ok := ds.Spec.Template.Annotations[opts.DaemonSetAnnotation]; !ok {
+		_, foundDSAnnotation := ds.Spec.Template.Annotations[opts.DaemonSetAnnotation]
+		_, foundPodSpecAnnotation := ds.ObjectMeta.Annotations[opts.DaemonSetAnnotation]
+
+		if !foundDSAnnotation && !foundPodSpecAnnotation {
+			logrus.Debugf("Received daemonset %s but skipped (no annotations)", ds.Name)
+
 			delete(dsList, ds.Name)
 			return
 		}
